@@ -71,10 +71,10 @@ class TKG():
         
         texts = [edge.text_repr for edge in self.pending_edges]
         
-        embeddings = self.embedding_model.encode(texts, batch_size=batch_size)
+        embeddings = self.embedding_model.encode(texts, batch_size=batch_size, convert_to_tensor = True)
         
         for edge, emb in zip(self.pending_edges, embeddings):
-            edge.embedding = torch.tensor(emb, dtype=torch.float32)
+            edge.embedding = emb
         
         self.pending_edges.clear()
         
@@ -86,7 +86,8 @@ class TKG():
             model: The embedding model.
         """
         model_name = os.getenv("EMBEDDING_MODEL")
-        model = SentenceTransformer(model_name)
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        model = SentenceTransformer(model_name, device=device)
         return model
         
     def build_faiss_index(self) -> None:
