@@ -5,7 +5,7 @@ import time
 import torch
 import pickle
 
-tkg = TKG()
+tkg = TKG(use_gpu = True)
 
 with open("data/MultiTQ/kg/train.pkl", "rb") as pkl_f:
     train_edges = pickle.load(pkl_f)

@@ -102,7 +102,13 @@ class TKG():
         # Convert embeddings to numpy array
         embeddings_array = np.array([edge.embedding.numpy() for edge in self.edges], dtype='float32')
         
-        self.faiss_index = faiss.IndexFlatIP(self.embedding_dim)
+        cpu_index = faiss.IndexFlatIP(self.embedding_dim)
+        
+        if self.use_gpu:
+            res = faiss.StandardGpuResources()
+            self.faiss_index = faiss.index_cpu_to_gpu(res, 0, cpu_index)  # 0 = GPU id
+        else:
+            self.faiss_index = cpu_index
         
         self.faiss_index.add(embeddings_array)
     
