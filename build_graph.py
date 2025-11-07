@@ -16,4 +16,4 @@ with open("data/MultiTQ/kg/train.pkl", "rb") as pkl_f:
         for edge in edges:
             tkg.add_edge(edge)
         tkg.embed_edges()
-        print("Edges for entity " + entity + "loaded and embedded in " + time.time() - start_time + "seconds.")
+        print("Edges for entity " + entity + "loaded and embedded in " + str(time.time() - start_time) + "seconds.")
