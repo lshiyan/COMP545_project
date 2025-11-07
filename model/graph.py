@@ -30,7 +30,7 @@ class TKGEdge():
         self.embedding = torch.tensor(embedding, dtype=torch.float32)
     
 class TKG(): 
-    def __init__(self):
+    def __init__(self, use_gpu = True):
         self.edges = []
         self.embedding_model = self.load_embedding_model()
         self.pending_edges = [] #If any edges are added without embedding, they are stored here. When embed_edges is called, we batch embed all of these.
