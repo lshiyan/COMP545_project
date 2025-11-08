@@ -17,3 +17,6 @@ with open("data/MultiTQ/kg/train.pkl", "rb") as pkl_f:
             tkg.add_edge(edge)
         tkg.embed_edges()
         print("Edges for entity " + entity + "loaded and embedded in " + str(time.time() - start_time) + "seconds.")
+
+with open("data/MultiTQ/tkg/train_tkg.pkl", "wb") as f:
+    pickle.dump(tkg, f)
