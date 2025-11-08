@@ -34,6 +34,7 @@ class TKG():
         self.edges = []
         self.embedding_model = self.load_embedding_model()
         self.pending_edges = [] #If any edges are added without embedding, they are stored here. When embed_edges is called, we batch embed all of these.
+        self.use_gpu = use_gpu
         
     def add_edge(self, tuple: tuple) -> None:
         """
@@ -90,9 +91,12 @@ class TKG():
         model = SentenceTransformer(model_name, device=device)
         return model
         
-    def build_faiss_index(self) -> None:
+    def build_faiss_index(self) -> faiss.Index:
         """
         Builds a FAISS index on all edge embeddings.
+        
+        Returns:
+            A faiss index that consists of all edge embeddings of the TKG.
         """
         if self.pending_edges:
             self.embed_edges()
@@ -106,13 +110,15 @@ class TKG():
         
         if self.use_gpu:
             res = faiss.StandardGpuResources()
-            self.faiss_index = faiss.index_cpu_to_gpu(res, 0, cpu_index)  # 0 = GPU id
+            faiss_index = faiss.index_cpu_to_gpu(res, 0, cpu_index)
         else:
-            self.faiss_index = cpu_index
+            faiss_index = cpu_index
         
-        self.faiss_index.add(embeddings_array)
+        faiss_index.add(embeddings_array)
+        
+        return faiss_index
     
-    def query_index(self, query: str, k: int = 5) -> List[tuple]:
+    def query_index(self, query: str, k: int = 5) -> List[dict]:
         """
         Query the FAISS index for similar edges.
         
@@ -121,7 +127,7 @@ class TKG():
             k: Number of top results to return.
         
         Returns:
-            A list of tuples (edge, distance) for the top k most similar edges.
+            A list of dicts containing the edge and textual representations of each edge.
         """
         query_embedding = self.embedding_model.encode(query)
         query_embedding = np.array([query_embedding], dtype='float32')
