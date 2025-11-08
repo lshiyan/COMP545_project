@@ -75,7 +75,7 @@ class TKG():
         embeddings = self.embedding_model.encode(texts, batch_size=batch_size, convert_to_tensor = True)
         
         for edge, emb in zip(self.pending_edges, embeddings):
-            edge.embedding = emb
+            edge.embedding = emb.to("cpu")
         
         self.pending_edges.clear()
         
