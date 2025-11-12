@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 from typing import List
-from openai_client import get_openai_client
+from const import get_openai_client, get_embedding_model
 import os
 import ast
 
@@ -9,7 +9,7 @@ load_dotenv()
 class COTExtractor():
     
     def __init__(self):
-        self.model = os.getenv("PROCESSING_MODEL")
+        self.model = get_embedding_model()
         self.prompt_id = os.getenv("COT_PROMPT_ID")
             
     def generate_cot(self, input: str) -> List:

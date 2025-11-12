@@ -8,6 +8,7 @@ import faiss
 import torch
 from sentence_transformers import SentenceTransformer
 from dotenv import load_dotenv
+from const import get_embedding_model
 
 load_dotenv()
 
@@ -97,9 +98,8 @@ def save_artifacts(
     if save_embeddings and embeddings is not None:
         np.save(os.path.join(outdir, "embeddings.npy"), embeddings)
 
-def load_model(model_name:str, use_gpu: bool) -> SentenceTransformer:
-    device = "cuda" if use_gpu else "cpu"
-    return SentenceTransformer(model_name, device=device)
+def load_model() -> SentenceTransformer:
+    return get_embedding_model()
 
 # -----------------------
 # Main
@@ -144,4 +144,7 @@ def main():
     print(f"Index size: {cpu_index.ntotal}")
 
 if __name__ == "__main__":
-    main()
+    with open("data/tkg/MultiTQ/test_metadata.json", "r", encoding="utf-8") as f:
+        metadata = json.load(f)
+
+    print(metadata[12])
