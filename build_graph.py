@@ -7,8 +7,9 @@ import numpy as np
 import faiss
 import torch
 from sentence_transformers import SentenceTransformer
+from prompts.text_repr_extraction import TEXT_REPR_EXTRACTION_PROMPT
 from dotenv import load_dotenv
-from const import get_embedding_model
+from const import get_embedding_model, get_llama_tokenizer_and_model
 
 load_dotenv()
 
@@ -31,8 +32,48 @@ def load_tsv(path: str) -> List[Tuple[str, str, str, str]]:
             facts.append((cols[0], cols[1], cols[2], cols[3]))
     return facts
 
-def build_texts(facts: List[Tuple[str, str, str, str]]) -> List[str]:
-    return [f"head={h}, tail={t}, relation={r}, ts={ts}" for (h, r, t, ts) in facts]
+def build_texts(texts: List[str], tokenizer, model, batch_size: int = 4, cache_path: str = None) -> List[str]:
+    """
+    Converts edges into natural language sentences using a local HuggingFace Llama model.
+    """
+    cache = {}
+    if cache_path and os.path.exists(cache_path):
+        with open(cache_path, "r", encoding="utf-8") as f:
+            cache = json.load(f)
+
+    sentences = []
+    new_cache = dict(cache)
+
+    for i in range(0, len(texts), batch_size):
+        batch = texts[i:i + batch_size]
+        prompts = [
+            f"Instruction: {TEXT_REPR_EXTRACTION_PROMPT} \n head= {h}, relation= {r}, tail: {t}, ts: {ts}\n"
+            for (h, r, t, ts) in batch
+        ]
+
+        inputs = tokenizer(prompts, return_tensors="pt", padding=True, truncation=True).to(model.device)
+        with torch.no_grad():
+            outputs = model.generate(**inputs)
+
+        generated_texts = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+
+        print(generated_texts)
+        for j, text in enumerate(generated_texts):
+            # take only new continuation after the prompt if desired
+            clean_text = text.strip()
+            h, r, t, ts = batch[j]
+            key = f"{h}|{r}|{t}|{ts}"
+            sentences.append(clean_text)
+            new_cache[key] = clean_text
+
+        # incremental cache save
+        if cache_path:
+            with open(cache_path, "w", encoding="utf-8") as f:
+                json.dump(new_cache, f, ensure_ascii=False, indent=2)
+
+        print(f"[Llama] Processed {i + len(batch)}/{len(texts)} edges")
+
+    return sentences
 
 def embed_texts(
     model: SentenceTransformer,
@@ -98,9 +139,6 @@ def save_artifacts(
     if save_embeddings and embeddings is not None:
         np.save(os.path.join(outdir, "embeddings.npy"), embeddings)
 
-def load_model() -> SentenceTransformer:
-    return get_embedding_model()
-
 # -----------------------
 # Main
 # -----------------------
@@ -123,12 +161,12 @@ def main():
         raise RuntimeError("No facts found in TSV.")
 
     print(f"[2/5] Loading embedding model ({os.getenv('EMBEDDING_MODEL') or 'all-MiniLM-L6-v2'})...")
-    model = load_model(os.getenv("EMBEDDING_MODEL"), use_gpu)
-    print(model)
+    model = get_embedding_model()
 
     print(f"[3/5] Embedding {len(facts)} facts (batch_size={args.batch_size}, device={'cuda' if use_gpu else 'cpu'})...")
     texts = build_texts(facts)
-    embeddings = embed_texts(model, texts, args.batch_size, use_gpu)  # L2-normalized float32
+    
+    """embeddings = embed_texts(model, sentences, args.batch_size, use_gpu)  # L2-normalized float32
 
     print(f"[4/5] Building FAISS index (IndexFlatIP) over dim={embeddings.shape[1]}...")
     cpu_index = build_faiss_index(embeddings, use_gpu)
@@ -141,10 +179,9 @@ def main():
     print(f" - Metadata:   {os.path.join(args.outdir, 'metadata.json')}")
     if args.save_embeddings:
         print(f" - Embeddings: {os.path.join(args.outdir, 'embeddings.npy')}")
-    print(f"Index size: {cpu_index.ntotal}")
+    print(f"Index size: {cpu_index.ntotal}")"""
 
 if __name__ == "__main__":
-    with open("data/tkg/MultiTQ/test_metadata.json", "r", encoding="utf-8") as f:
-        metadata = json.load(f)
-
-    print(metadata[12])
+    tokenizer, model = get_llama_tokenizer_and_model()
+    texts = [("Abdel_Fattah_Al-Sisi", "Head_of_Government_(Egypt)", "Express_intent_to_engage_in_diplomatic_cooperation_(such_as_policy_support)", "2014-06-17")]
+    sentences = build_texts(texts, tokenizer, model, batch_size = 16, cache_path = "data/kg/MultiTQ/test_cache.json")

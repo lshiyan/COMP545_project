@@ -32,7 +32,7 @@ class IndexSearch():
             
         return metadata
     
-    def search(self, query: str) -> dict:
+    def search_index(self, query: str) -> dict:
         """
         Performs a semantic similarity search on the index.
         

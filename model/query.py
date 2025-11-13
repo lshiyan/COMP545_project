@@ -9,7 +9,7 @@ load_dotenv()
 class COTExtractor():
     
     def __init__(self):
-        self.model = get_embedding_model()
+        self.model_name = os.getenv("PROCESSING_MODEL")
         self.prompt_id = os.getenv("COT_PROMPT_ID")
             
     def generate_cot(self, input: str) -> List:
@@ -25,12 +25,14 @@ class COTExtractor():
         client = get_openai_client()
         
         response = client.responses.create(
-            model = self.model,
+            model = self.model_name,
             prompt = {
                 "id":self.prompt_id
             },
             input = input
         )
+        
+        print(response)
         
         cot_list_string = response.output[0].content[0].text
         cot_list = ast.literal_eval(cot_list_string)

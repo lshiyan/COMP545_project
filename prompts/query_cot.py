@@ -8,7 +8,7 @@ as to how you would solve the problem.
 - The chain of thought output must be in list format. Example:
 ["str1", "str2", "str3"]. 
 - Each entry in the should be an intermediate question that is needed to ask in order to consolidate implicit temporal constraints.
-- The last entry should be the original question.
+- The last entry should be the original question. It could be the case that the last entry is the only entry, if the question is not temporally ambiguous.
 - You can assume when generating each question in the list that you have an answer to all previous questions, you do not need to specify "Given the answer to a previous question" or anything.
 ######################
 -Examples-
@@ -24,7 +24,6 @@ Query: ""When did Vasilis Skouris visit China?""
 ################
 Output:
 ["When did Vasilis Skouris visit China?"]
-12
 #############################
 Example 3:
 Query:  "Before Kuwait, which country received the Government Delegation of North Korea's visit from the Government Delegation of North Korea last?"

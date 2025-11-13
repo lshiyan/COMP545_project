@@ -13,10 +13,10 @@ Given an edge with head entity, tail entity, relation, and timestamp, generate a
 -Examples-
 ######################
 Example 1:
-Edge: head="Barack Obama", tail="United States", relation="PresidentOf", ts="2009-2017"
+Edge: head="Barack Obama", tail="United States", relation="BecamePresidentOf", ts="2009-01-05"
 ################
 Output:
-Barack Obama was the President of the United States from 2009 to 2017.
+Barack Obama became President of the United States on January, 5, 2009.
 #############################
 Example 2:
 Edge: head="Amazon", tail="Jeff Bezos", relation="FoundedBy", ts="1994"
