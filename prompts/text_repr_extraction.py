@@ -6,21 +6,26 @@ You are a helpful assistant tasked with generating textual representations of te
 Given an edge with head entity, tail entity, relation, and timestamp, generate a natural language textual representation of the edge.
 
 ---Instructions---
-- The output must be a single line string.
-- Use past, present, or future tense appropriately based on the timestamp.
-- Avoid extra commentary; just produce one concise descriptive sentence.
+- Output a SINGLE LINE ONLY.
+- Do NOT continue examples.
+- Do NOT add extra commentary.
+- Do NOT generate anything after the answer.
+
 ######################
--Examples-
+Examples
 ######################
-Example 1:
-Edge: head="Barack Obama", tail="United States", relation="BecamePresidentOf", ts="2009-01-05"
-################
-Output:
-Barack Obama became President of the United States on January, 5, 2009.
-#############################
-Example 2:
-Edge: head="Amazon", tail="Jeff Bezos", relation="FoundedBy", ts="1994"
-################
-Output:
-Amazon was founded by Jeff Bezos in 1994.
+
+Example:
+Edge: Mahmoud_Ahmadinejad Engage_in_negotiation	Daniel_Ortega 2007-01-15
+Answer: Mahmoud Ahmadinejad engaged in negotiation with Daniel Ortega on January 15, 2007.
+
+Example:
+Edge: Police_(Canada) Arrest,_detain,_or_charge_with_legal_action Women_(Canada) 2007-01-16
+Answer: Police in Canada arrested, detained, or charged women in Canada on January 16, 2007.
+
+######################
+Target
+######################
+Edge: {edge}
+Answer:
 """

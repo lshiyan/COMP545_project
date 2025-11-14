@@ -51,7 +51,9 @@ def build_texts(texts: List[str], tokenizer, model, batch_size: int = 4, cache_p
             for (h, r, t, ts) in batch
         ]
 
-        inputs = tokenizer(prompts, return_tensors="pt", padding=True, truncation=True).to(model.device)
+        inputs = tokenizer(prompts, return_tensors="pt", padding=True, truncation=True)
+        inputs = {k: v.to(model.device) for k, v in inputs.items()}
+        
         with torch.no_grad():
             outputs = model.generate(**inputs)
 

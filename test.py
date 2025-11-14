@@ -1,4 +1,4 @@
-import json
+"""import json
 from model.search import IndexSearch 
 from model.agent import QueryAgent
 from model.tools import get_retrieval_tool, get_final_answer_tool
@@ -6,7 +6,7 @@ from prompts.query_cot import QUERY_COT_SYSTEM_PROMPT
 import faiss, numpy as np, torch
 from dotenv import load_dotenv
 from const import get_embedding_model
-load_dotenv()
+load_dotenv()"""
 
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from prompts.text_repr_extraction import TEXT_REPR_EXTRACTION_PROMPT
@@ -21,14 +21,12 @@ model = AutoModelForCausalLM.from_pretrained(
     device_map="auto"
 )
 
-def edge_to_nl(edge):
+def edge_to_nl(txt):
     """
     Convert a TKG edge into natural language using LLaMA.
     """
-    base = edge
 
-    prompt = TEXT_REPR_EXTRACTION_PROMPT.format("edge", edge)
-
+    prompt = TEXT_REPR_EXTRACTION_PROMPT.format(edge = txt)
 
     inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
 
@@ -36,15 +34,12 @@ def edge_to_nl(edge):
         **inputs,
         max_new_tokens=60,
         do_sample=False,
-        temperature=0.1
+        temperature=0.1,
+        eos_token_id=tokenizer.encode("\n")[0] #stops after one newline.
     )
 
     text = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-    # Return only the answer after "Answer:" for cleanliness
-    if "Answer:" in text:
-        text = text.split("Answer:")[1].strip()
-
     return text
 
-print(edge_to_nl("head=Malaysia, tail=Association_of_Southeast_Asian_Nations, relation=Make_statement, ts=2007-01-15"))
+print(edge_to_nl("Police_(South_Korea)	Mobilize_or_increase_police_power	South_Korea	2007-01-16"))

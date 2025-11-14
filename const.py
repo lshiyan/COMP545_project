@@ -46,4 +46,6 @@ def get_llama_tokenizer_and_model():
         
         _llama_model = AutoModelForCausalLM.from_pretrained(llama_name, dtype = "auto", device_map = "auto")
 
+        _llama_model = _llama_model.to("cuda" if torch.cuda.is_available() else "cpu")
+        
     return _tokenizer, _llama_model
