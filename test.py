@@ -1,71 +1,50 @@
-import torch
-from transformers import pipeline
+import json
+from model.search import IndexSearch 
+from model.agent import QueryAgent
+from model.tools import get_retrieval_tool, get_final_answer_tool
+from prompts.query_cot import QUERY_COT_SYSTEM_PROMPT
+import faiss, numpy as np, torch
+from dotenv import load_dotenv
+from const import get_embedding_model
+load_dotenv()
 
-# ------------------------------
-# 1️⃣ Model config
-# ------------------------------
-model_id = "meta-llama/Llama-3.2-3B-Instruct"
-
-# If you have 16GB+ VRAM (e.g., 3090, A100), you can use float16 or bfloat16
-# Otherwise, set to "auto" to let Transformers decide
-torch_dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
-
-# Initialize pipeline — this automatically places weights on GPU
-pipe = pipeline(
-    "text-generation",
-    model=model_id,
-    torch_dtype=torch_dtype,
-    device_map="auto",           # automatically uses all visible GPUs
-    max_new_tokens=128,          # 512 is usually overkill for 1-sentence output
-    temperature=0.3,
-    do_sample=False,
-)
-
-# ------------------------------
-# 2️⃣ Generation function
-# ------------------------------
-def edge_to_sentence(head, relation, tail, ts):
-    """
-    Converts a temporal knowledge-graph edge into a natural-language sentence.
-    """
-    prompt = (
-        f"Convert the following to a natural language representation:\n"
-        f"head = {head}\nrelation = {relation}\ntail = {tail}\ntimestamp = {ts}\n"
-        f"Use fluent, grammatical English and express the date naturally."
-    )
-
-    result = pipe(prompt, batch_size=1)[0]["generated_text"]
-
-    # remove the prompt echo
-    if result.startswith(prompt):
-        result = result[len(prompt):]
-    return result.strip()
-
-# ------------------------------
-# 3️⃣ Example
-# ------------------------------
-if __name__ == "__main__":
-    sentence = edge_to_sentence("Barack Obama", "BecamePresidentOf", "United States", "2009-01-05")
-    print("\n[Llama Output] →", sentence)
-    
-"""from const import get_openai_client, get_llama_tokenizer_and_model
-from model.query import COTExtractor
-from model.search import IndexSearch
+from transformers import AutoTokenizer, AutoModelForCausalLM
 from prompts.text_repr_extraction import TEXT_REPR_EXTRACTION_PROMPT
 import torch
-tokenizer, model = get_llama_tokenizer_and_model()
 
-h = "Abdul_Kalam"
-r = "Express_intent_to_engage_in_diplomatic_cooperation_(such_as_policy_support)"
-t = "Social_Worker_(India)"
-ts = '2005-01-01'
+LLAMA_MODEL = "meta-llama/Llama-3.2-3B-Instruct"
 
-prompt = f"The quick brown fox"
+tokenizer = AutoTokenizer.from_pretrained(LLAMA_MODEL)
+model = AutoModelForCausalLM.from_pretrained(
+    LLAMA_MODEL,
+    torch_dtype=torch.float16,
+    device_map="auto"
+)
 
-inputs = tokenizer(prompt, return_tensors="pt", padding=True, truncation=True).to(model.device)
-with torch.no_grad():
-    outputs = model.generate(**inputs, max_new_tokens=512)
+def edge_to_nl(edge):
+    """
+    Convert a TKG edge into natural language using LLaMA.
+    """
+    base = edge
 
-generated_texts = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+    prompt = TEXT_REPR_EXTRACTION_PROMPT.format("edge", edge)
 
-print(generated_texts)"""
+
+    inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+
+    outputs = model.generate(
+        **inputs,
+        max_new_tokens=60,
+        do_sample=False,
+        temperature=0.1
+    )
+
+    text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+    # Return only the answer after "Answer:" for cleanliness
+    if "Answer:" in text:
+        text = text.split("Answer:")[1].strip()
+
+    return text
+
+print(edge_to_nl("head=Malaysia, tail=Association_of_Southeast_Asian_Nations, relation=Make_statement, ts=2007-01-15"))
