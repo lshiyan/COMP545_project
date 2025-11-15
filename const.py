@@ -40,11 +40,11 @@ def get_llama_tokenizer_and_model():
     if _tokenizer is None or _llama_model is None:
         llama_name = os.getenv("LLAMA_MODEL")
 
-        _tokenizer = AutoTokenizer.from_pretrained(llama_name)
+        _tokenizer = AutoTokenizer.from_pretrained(llama_name, local_files_only = True)
         if _tokenizer.pad_token is None:
             _tokenizer.pad_token = _tokenizer.eos_token
         
-        _llama_model = AutoModelForCausalLM.from_pretrained(llama_name, dtype = "auto", device_map = "auto")
+        _llama_model = AutoModelForCausalLM.from_pretrained(llama_name, dtype = "auto", device_map = "auto", local_files_only = True)
 
         _llama_model = _llama_model.to("cuda" if torch.cuda.is_available() else "cpu")
         

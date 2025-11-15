@@ -10,16 +10,12 @@ load_dotenv()"""
 
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from prompts.text_repr_extraction import TEXT_REPR_EXTRACTION_PROMPT
+from const import get_llama_tokenizer_and_model
 import torch
 
 LLAMA_MODEL = "meta-llama/Llama-3.2-3B-Instruct"
 
-tokenizer = AutoTokenizer.from_pretrained(LLAMA_MODEL)
-model = AutoModelForCausalLM.from_pretrained(
-    LLAMA_MODEL,
-    dtype = "auto",
-    device_map="auto"
-)
+tokenizer, model = get_llama_tokenizer_and_model()
 
 def edge_to_nl(txt):
     """
