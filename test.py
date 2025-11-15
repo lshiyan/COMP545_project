@@ -17,7 +17,7 @@ LLAMA_MODEL = "meta-llama/Llama-3.2-3B-Instruct"
 tokenizer = AutoTokenizer.from_pretrained(LLAMA_MODEL)
 model = AutoModelForCausalLM.from_pretrained(
     LLAMA_MODEL,
-    torch_dtype=torch.float16,
+    dtype = "auto",
     device_map="auto"
 )
 
@@ -39,7 +39,7 @@ def edge_to_nl(txt):
     )
 
     text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    answer = text[len(prompt):]
+    return answer
 
-    return text
-
-print(edge_to_nl("Police_(South_Korea)	Mobilize_or_increase_police_power	South_Korea	2007-01-16"))
+print(edge_to_nl("Abdul_Kalam\tExpress_intent_to_engage_in_diplomatic_cooperation_(such_as_policy_support)\tSocial_Worker_(India)\t2005-01-01\n"))

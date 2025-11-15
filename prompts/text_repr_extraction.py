@@ -4,7 +4,6 @@ You are a helpful assistant tasked with generating textual representations of te
 
 ---Goal---
 Given an edge with head entity, tail entity, relation, and timestamp, generate a natural language textual representation of the edge.
-
 ---Instructions---
 - Output a SINGLE LINE ONLY.
 - Do NOT continue examples.
@@ -22,6 +21,10 @@ Answer: Mahmoud Ahmadinejad engaged in negotiation with Daniel Ortega on January
 Example:
 Edge: Police_(Canada) Arrest,_detain,_or_charge_with_legal_action Women_(Canada) 2007-01-16
 Answer: Police in Canada arrested, detained, or charged women in Canada on January 16, 2007.
+
+Example:
+Edge: Latvian_Chamber_of_Commerce_and_Industry	Express_intent_to_meet_or_negotiate	Aigars_Kalvitis	2007-01-17
+Answer: The Latvian Chamber of Commerce and Industry expressed intent to meet or negotiate with Aigars Kalvitis on January 17, 2007.
 
 ######################
 Target
