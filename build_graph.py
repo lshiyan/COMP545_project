@@ -1,10 +1,10 @@
+import torch
 import argparse
 import json
 import os
 from typing import List, Tuple
 import numpy as np
 import faiss
-import torch
 from sentence_transformers import SentenceTransformer
 from prompts.text_repr_extraction import TEXT_REPR_EXTRACTION_PROMPT
 from dotenv import load_dotenv
