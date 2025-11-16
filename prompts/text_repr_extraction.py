@@ -15,8 +15,8 @@ Examples
 ######################
 
 Example:
-Edge: Mahmoud_Ahmadinejad Engage_in_negotiation	Daniel_Ortega 2007-01-15
-Answer: Mahmoud Ahmadinejad engaged in negotiation with Daniel Ortega on January 15, 2007.
+Edge: Defense_/_Security_Ministry_(United_States) Make_a_visit South_Korea 2012-08-07
+Answer: The Defense and Security Ministry of the United States made a visit to South Korea on August, 7, 2012.
 
 Example:
 Edge: Police_(Canada) Arrest,_detain,_or_charge_with_legal_action Women_(Canada) 2007-01-16

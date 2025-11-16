@@ -42,7 +42,6 @@ def build_texts(texts: List[str], tokenizer, model, batch_size: int = 128, cache
 
     sentences = []
     new_cache = dict(cache)
-    eos_token_id = tokenizer.encode("\n")[0]  # stops after one newline
 
     for i in range(0, len(texts), batch_size):
         batch = texts[i:i + batch_size]
@@ -57,7 +56,7 @@ def build_texts(texts: List[str], tokenizer, model, batch_size: int = 128, cache
                 max_new_tokens=60,
                 do_sample=False,
                 temperature=0.1,
-                eos_token_id=eos_token_id
+                eos_token_id=tokenizer.eos_token_id
             )
 
         generated_texts = tokenizer.batch_decode(outputs, skip_special_tokens=True)
