@@ -1,14 +1,18 @@
-TEXT_REPR_EXTRACTION_PROMPT="""
+TEXT_REPR_EXTRACTION_PROMPT = """
 ---Role---
 You are a helpful assistant tasked with generating textual representations of temporal knowledge graph edges.
 
 ---Goal---
 Given an edge with head entity, tail entity, relation, and timestamp, generate a natural language textual representation of the edge.
+
 ---Instructions---
 - Output a SINGLE LINE ONLY.
+- Output ONLY the final sentence.
+- Do NOT add “Answer:”.
+- Do NOT add any preface like "The answer is".
+- Do NOT add any commentary.
 - Do NOT continue examples.
-- Do NOT add extra commentary.
-- Do NOT generate anything after the answer.
+- Do NOT output anything except the single final line.
 
 ######################
 Examples
@@ -16,19 +20,24 @@ Examples
 
 Example:
 Edge: Defense_/_Security_Ministry_(United_States) Make_a_visit South_Korea 2012-08-07
-Answer: The Defense and Security Ministry of the United States made a visit to South Korea on August, 7, 2012.
+Output: The Defense and Security Ministry of the United States made a visit to South Korea on August 7, 2012.
 
 Example:
 Edge: Police_(Canada) Arrest,_detain,_or_charge_with_legal_action Women_(Canada) 2007-01-16
-Answer: Police in Canada arrested, detained, or charged women in Canada on January 16, 2007.
+Output: Police in Canada arrested, detained, or charged women in Canada on January 16, 2007.
 
 Example:
-Edge: Latvian_Chamber_of_Commerce_and_Industry	Express_intent_to_meet_or_negotiate	Aigars_Kalvitis	2007-01-17
-Answer: The Latvian Chamber of Commerce and Industry expressed intent to meet or negotiate with Aigars Kalvitis on January 17, 2007.
+Edge: Latvian_Chamber_of_Commerce_and_Industry Express_intent_to_meet_or_negotiate Aigars_Kalvitis 2007-01-17
+Output: The Latvian Chamber of Commerce and Industry expressed intent to meet or negotiate with Aigars Kalvitis on January 17, 2007.
+
+Example:
+Edge: Sudan Express_intent_to_cooperate South_Sudan 2012-08-07
+Output: Sudan expressed intent to cooperate with South Sudan on August 7, 2012.
 
 ######################
 Target
 ######################
 Edge: {edge}
-Answer:
+
+Output:
 """
