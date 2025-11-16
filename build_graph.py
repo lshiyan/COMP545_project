@@ -31,7 +31,7 @@ def load_tsv(path: str) -> List[str]:
             facts.append(line.replace("\t", " "))
     return facts
 
-def build_texts(texts: List[str], tokenizer, model, batch_size: int = 4, cache_path: str = None) -> List[str]:
+def build_texts(texts: List[str], tokenizer, model, batch_size: int = 128, cache_path: str = None) -> List[str]:
     """
     Converts edges into natural language sentences using a local HuggingFace Llama model.
     """
@@ -65,7 +65,6 @@ def build_texts(texts: List[str], tokenizer, model, batch_size: int = 4, cache_p
         for j, text in enumerate(generated_texts):
             # Extract answer after "Answer:" like edge_to_nl does
             answer = text[len(prompts[j]):]
-            print(answer)
             sentences.append(answer)
             new_cache[answer] = answer
 
@@ -75,7 +74,6 @@ def build_texts(texts: List[str], tokenizer, model, batch_size: int = 4, cache_p
                 json.dump(new_cache, f, ensure_ascii=False, indent=2)
 
         print(f"[Llama] Processed {i + len(batch)}/{len(texts)} edges")
-        break
 
     return sentences
 
@@ -173,7 +171,7 @@ def main():
     tokenizer, llama_model = get_llama_tokenizer_and_model()
 
     print(f"[3/5] Embedding {len(facts)} facts (batch_size={args.batch_size}, device={'cuda' if use_gpu else 'cpu'})...")
-    sentences = build_texts(facts, tokenizer, llama_model, args.batch_size)
+    sentences = build_texts(facts, tokenizer, llama_model)
     embeddings = embed_texts(embedding_model, sentences, args.batch_size, use_gpu)  # L2-normalized float32
 
     print(f"[4/5] Building FAISS index (IndexFlatIP) over dim={embeddings.shape[1]}...")
