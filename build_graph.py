@@ -119,6 +119,7 @@ def save_artifacts(
     outdir: str,
     index: faiss.Index,
     facts: List[str],
+    sentences: List[str],
     save_embeddings: bool,
     embeddings: np.ndarray = None
 ):
@@ -133,7 +134,7 @@ def save_artifacts(
     # Save metadata (ID-aligned with embeddings order: 0..N-1)
     metadata = [
         {"id": i, "head": h, "relation": r, "tail": t, "timestamp": ts,
-         "text": f"head={h}, tail={t}, relation={r}, ts={ts}"}
+         "text": sentences[i]}
         for i, (h, r, t, ts) in enumerate(split_facts)
     ]
 
@@ -178,7 +179,7 @@ def main():
     cpu_index = build_faiss_index(embeddings, use_gpu)
 
     print(f"[5/5] Saving artifacts to {args.outdir} ...")
-    save_artifacts(args.outdir, cpu_index, facts, args.save_embeddings, embeddings)
+    save_artifacts(args.outdir, cpu_index, facts, sentences, args.save_embeddings, embeddings)
 
     print("Done.")
     print(f" - Index:      {os.path.join(args.outdir, 'index.faiss')}")
