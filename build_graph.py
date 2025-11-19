@@ -39,7 +39,7 @@ def build_texts(
     texts: List[str],
     tokenizer,
     model,
-    batch_size: int = 128
+    batch_size: int = 32
 ) -> List[str]:
     """
     Converts edges into natural language sentences using a local HuggingFace Llama model.
