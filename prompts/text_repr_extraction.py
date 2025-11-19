@@ -31,7 +31,7 @@ Output: Police (Canada) arrested, detained, or charged Women (Canada) on January
 
 Example:
 Edge: Latvian_Chamber_of_Commerce_and_Industry Express_intent_to_meet_or_negotiate Aigars_Kalvitis 2007-01-17
-Output: Latvian Chamber of Commerce and Industry expressed intent to meet or negotiate with Aigars Kalvitis on January 17, 2007.
+Output: The Latvian Chamber of Commerce and Industry expressed intent to meet or negotiate with Aigars Kalvitis on January 17, 2007.
 
 Example:
 Edge: Sudan Express_intent_to_cooperate South_Sudan 2012-08-07
@@ -42,5 +42,5 @@ Target
 ######################
 Edge: {edge}
 
-Output:
+Answer:
 """

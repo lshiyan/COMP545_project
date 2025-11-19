@@ -19,6 +19,9 @@ def load_tsv(path: str) -> List[str]:
     """
     Loads a TSV file with exactly 4 columns per line:
     head, relation, tail, ts
+
+    Returns a list of single-line strings where columns are separated by spaces:
+    "head relation tail ts"
     """
     facts = []
     with open(path, "r", encoding="utf-8") as f:
@@ -28,49 +31,53 @@ def load_tsv(path: str) -> List[str]:
             cols = line.rstrip("\n").split("\t")
             if len(cols) != 4:
                 raise ValueError(f"Invalid line (expected 4 columns): {line}")
-            facts.append(line.replace("\t", " "))
+            # We later split on spaces, so we replace tabs with spaces here
+            facts.append(line.replace("\t", " ").strip())
     return facts
 
-def build_texts(texts: List[str], tokenizer, model, batch_size: int = 128, cache_path: str = None) -> List[str]:
+def build_texts(
+    texts: List[str],
+    tokenizer,
+    model,
+    batch_size: int = 128
+) -> List[str]:
     """
     Converts edges into natural language sentences using a local HuggingFace Llama model.
+    No caching. Guaranteed positional alignment: sentences[i] corresponds to texts[i].
     """
-    cache = {}
-    if cache_path and os.path.exists(cache_path):
-        with open(cache_path, "r", encoding="utf-8") as f:
-            cache = json.load(f)
-
-    sentences = []
-    new_cache = dict(cache)
+    sentences: List[str] = []
 
     for i in range(0, len(texts), batch_size):
         batch = texts[i:i + batch_size]
+
+        # Build prompts
         prompts = [TEXT_REPR_EXTRACTION_PROMPT.format(edge=s) for s in batch]
 
-        inputs = tokenizer(prompts, return_tensors="pt", padding=True, truncation=True)
+        # Tokenize
+        inputs = tokenizer(
+            prompts,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+        )
         inputs = {k: v.to(model.device) for k, v in inputs.items()}
-        
+
+        # Generate
         with torch.no_grad():
             outputs = model.generate(
                 **inputs,
                 max_new_tokens=60,
                 do_sample=False,
                 temperature=0.1,
-                eos_token_id=tokenizer.eos_token_id
+                eos_token_id=tokenizer.eos_token_id,
             )
 
-        generated_texts = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        decoded = tokenizer.batch_decode(outputs, skip_special_tokens=True)
 
-        for j, text in enumerate(generated_texts):
-            # Extract answer after "Answer:" like edge_to_nl does
-            answer = text[len(prompts[j]):]
+        # Extract answer after "Answer:" to mirror edge_to_nl behavior
+        for raw in decoded:
+            answer = raw.split("Answer:")[-1].strip()
             sentences.append(answer)
-            new_cache[answer] = answer
-
-        # incremental cache save
-        if cache_path:
-            with open(cache_path, "w", encoding="utf-8") as f:
-                json.dump(new_cache, f, ensure_ascii=False, indent=2)
 
         print(f"[Llama] Processed {i + len(batch)}/{len(texts)} edges")
 
@@ -86,31 +93,27 @@ def embed_texts(
     Returns float32 np.array of shape (N, D) with L2-normalized rows.
     """
     device = "cuda" if use_gpu else "cpu"
-    # encode supports normalize_embeddings=True (cosine-friendly)
-    # convert_to_numpy ensures we get np.ndarray directly
     embeddings = model.encode(
         texts,
         batch_size=batch_size,
         convert_to_numpy=True,
         normalize_embeddings=True,
-        device=device
+        device=device,
     ).astype("float32")
     return embeddings
 
 def build_faiss_index(embeddings: np.ndarray, use_gpu: bool) -> faiss.Index:
     """
     Builds an IndexFlatIP for cosine-like search (embeddings are normalized).
-    If GPU available & requested, constructs on CPU then moves to GPU for speed,
-    but we always return a CPU index for persistence unless caller asks for GPU.
+    If GPU available & requested, constructs on CPU then warms up GPU resources,
+    but we always return a CPU index for persistence.
     """
     d = embeddings.shape[1]
     cpu_index = faiss.IndexFlatIP(d)
     cpu_index.add(embeddings)
 
-    # We will return CPU index for saving. If you want to keep a GPU copy
-    # for searching in-process, move it to GPU separately after saving.
     if use_gpu:
-        # Warm up GPU resources once (optional); not strictly needed for saving
+        # Optional warm-up of GPU resources; index remains on CPU
         _ = faiss.StandardGpuResources()
     return cpu_index
 
@@ -124,18 +127,33 @@ def save_artifacts(
 ):
     os.makedirs(outdir, exist_ok=True)
 
+    # Basic alignment sanity check
+    split_facts = [fact.split() for fact in facts]
+    if len(split_facts) != len(sentences):
+        raise ValueError(
+            f"Mismatch between facts ({len(split_facts)}) and sentences ({len(sentences)})."
+        )
+
     # Save FAISS index
     index_path = os.path.join(outdir, "index.faiss")
     faiss.write_index(index, index_path)
 
-    split_facts = [fact.split() for fact in facts if len(fact.split()) == 4]
-
     # Save metadata (ID-aligned with embeddings order: 0..N-1)
-    metadata = [
-        {"id": i, "head": h, "relation": r, "tail": t, "timestamp": ts,
-         "text": sentences[i]}
-        for i, (h, r, t, ts) in enumerate(split_facts)
-    ]
+    metadata = []
+    for i, parts in enumerate(split_facts):
+        if len(parts) != 4:
+            raise ValueError(f"Fact at index {i} does not have 4 tokens: {parts}")
+        h, r, t, ts = parts
+        metadata.append(
+            {
+                "id": i,
+                "head": h,
+                "relation": r,
+                "tail": t,
+                "timestamp": ts,
+                "text": sentences[i],
+            }
+        )
 
     with open(os.path.join(outdir, "metadata.json"), "w", encoding="utf-8") as f:
         json.dump(metadata, f, ensure_ascii=False, indent=2)
@@ -145,16 +163,42 @@ def save_artifacts(
         np.save(os.path.join(outdir, "embeddings.npy"), embeddings)
 
     return
+
 # -----------------------
 # Main
 # -----------------------
 def main():
-    parser = argparse.ArgumentParser(description="Build a FAISS index over a Temporal Knowledge Graph TSV.")
-    parser.add_argument("--input", required=True, help="Path to TKG TSV file (head, relation, tail, ts).")
-    parser.add_argument("--outdir", required=True, help="Directory to write index and artifacts.")
-    parser.add_argument("--batch-size", type=int, default=1024, help="Batch size for embedding.")
-    parser.add_argument("--save-embeddings", action="store_true", default=False, help="Also save embeddings.npy.")
-    parser.add_argument("--use-gpu", action="store_true", default= False, help="Use GPU if available for embeddings/FAISS.")
+    parser = argparse.ArgumentParser(
+        description="Build a FAISS index over a Temporal Knowledge Graph TSV."
+    )
+    parser.add_argument(
+        "--input",
+        required=True,
+        help="Path to TKG TSV file (head, relation, tail, ts).",
+    )
+    parser.add_argument(
+        "--outdir",
+        required=True,
+        help="Directory to write index and artifacts.",
+    )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=1024,
+        help="Batch size for embedding and/or generation.",
+    )
+    parser.add_argument(
+        "--save-embeddings",
+        action="store_true",
+        default=False,
+        help="Also save embeddings.npy.",
+    )
+    parser.add_argument(
+        "--use-gpu",
+        action="store_true",
+        default=False,
+        help="Use GPU if available for embeddings/FAISS.",
+    )
     args = parser.parse_args()
 
     use_gpu = detect_gpu(args.use_gpu)
@@ -165,14 +209,26 @@ def main():
     facts = load_tsv(args.input)
     if not facts:
         raise RuntimeError("No facts found in TSV.")
-    
-    print(f"[2/5] Loading embedding model ({os.getenv('EMBEDDING_MODEL') or 'all-MiniLM-L6-v2'})...")
+
+    print(
+        f"[2/5] Loading embedding model ({os.getenv('EMBEDDING_MODEL') or 'all-MiniLM-L6-v2'})..."
+    )
     embedding_model = get_embedding_model()
     tokenizer, llama_model = get_llama_tokenizer_and_model()
 
-    print(f"[3/5] Embedding {len(facts)} facts (batch_size={args.batch_size}, device={'cuda' if use_gpu else 'cpu'})...")
-    sentences = build_texts(facts, tokenizer, llama_model)
-    embeddings = embed_texts(embedding_model, sentences, args.batch_size, use_gpu)  # L2-normalized float32
+    print(
+        f"[3/5] Generating NL for {len(facts)} facts and computing embeddings "
+        f"(batch_size={args.batch_size}, device={'cuda' if use_gpu else 'cpu'})..."
+    )
+    sentences = build_texts(facts, tokenizer, llama_model, batch_size=args.batch_size)
+    if len(sentences) != len(facts):
+        raise RuntimeError(
+            f"build_texts produced {len(sentences)} sentences for {len(facts)} facts."
+        )
+
+    embeddings = embed_texts(
+        embedding_model, sentences, args.batch_size, use_gpu
+    )  # L2-normalized float32
 
     print(f"[4/5] Building FAISS index (IndexFlatIP) over dim={embeddings.shape[1]}...")
     cpu_index = build_faiss_index(embeddings, use_gpu)
