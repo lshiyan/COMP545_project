@@ -221,7 +221,17 @@ def main():
         f"(batch_size={args.batch_size}, device={'cuda' if use_gpu else 'cpu'})..."
     )
     sentences = build_texts(facts, tokenizer, llama_model)
-    if len(sentences) != len(facts):
+    
+    os.makedirs(args.outdir, exist_ok=True)
+    outfile = os.path.join(args.outdir, "sentences.txt")
+
+    with open(outfile, "w", encoding="utf-8") as f:
+        for s in sentences:
+            f.write(s + "\n")
+
+    print(f"Done. Saved {len(sentences)} sentences to {outfile}")
+    
+    """if len(sentences) != len(facts):
         raise RuntimeError(
             f"build_texts produced {len(sentences)} sentences for {len(facts)} facts."
         )
@@ -241,7 +251,7 @@ def main():
     print(f" - Metadata:   {os.path.join(args.outdir, 'metadata.json')}")
     if args.save_embeddings:
         print(f" - Embeddings: {os.path.join(args.outdir, 'embeddings.npy')}")
-    print(f"Index size: {cpu_index.ntotal}")
+    print(f"Index size: {cpu_index.ntotal}")"""
 
 if __name__ == "__main__":
     main()
