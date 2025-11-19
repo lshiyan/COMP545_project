@@ -39,7 +39,7 @@ def build_texts(
     texts: List[str],
     tokenizer,
     model,
-    batch_size: int = 32
+    batch_size: int = 128
 ) -> List[str]:
     """
     Converts edges into natural language sentences using a local HuggingFace Llama model.
@@ -220,7 +220,7 @@ def main():
         f"[3/5] Generating NL for {len(facts)} facts and computing embeddings "
         f"(batch_size={args.batch_size}, device={'cuda' if use_gpu else 'cpu'})..."
     )
-    sentences = build_texts(facts, tokenizer, llama_model, batch_size=args.batch_size)
+    sentences = build_texts(facts, tokenizer, llama_model)
     if len(sentences) != len(facts):
         raise RuntimeError(
             f"build_texts produced {len(sentences)} sentences for {len(facts)} facts."
