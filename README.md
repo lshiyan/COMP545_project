@@ -9,7 +9,7 @@ This project builds a semantic search index over temporal knowledge graph edges,
 - **Temporal filtering** (`before`, `after`, `on`)
 - **Pointwise reranking**
 - **LangChain-based query agent**
-- **MultiTQ evaluation pipeline** :contentReference[oaicite:1]{index=1}
+- **MultiTQ evaluation pipeline**
 
 ---
 
@@ -20,9 +20,9 @@ The pipeline works in four stages:
 1. **Convert TKG edges into natural-language sentences**
 2. **Embed those sentences and build a FAISS index**
 3. **Retrieve and rerank temporally relevant facts**
-4. **Use an agent to answer temporal questions using retrieved context only** :contentReference[oaicite:2]{index=2}
+4. **Use an agent to answer temporal questions using retrieved context only**
 
-This repository was developed around experiments on **MultiTQ**, with scripts for building the graph/index and running sampled evaluations by question type, label, answer type, or time level. :contentReference[oaicite:3]{index=3}
+This repository was developed around experiments on **MultiTQ**, with scripts for building the graph/index and running sampled evaluations by question type, label, answer type, or time level.
 
 ---
 
@@ -42,3 +42,4 @@ COMP545-TempRAG/
 ├── MultiTQ_experiment.sh     # cluster job script for evaluation
 ├── const.py                  # model loaders / shared configuration
 └── README.md
+
